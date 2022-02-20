@@ -22,6 +22,8 @@ class ready(task_state):
         return f"{self.name} task is ready with {self.result}"
 
 
+#TODO : create a task class to manage context switching, class should hold the information
+
 def wait_for(val,name):
     start = time.time()
     task_rd = False
@@ -53,6 +55,8 @@ class scheduler:
         self.pend.append(task)
 
     def spin(self):
+        ## TODO : instead of polling implement callback
+
         while len(self.pend) > 0:
             ret = None
             try:
@@ -63,9 +67,12 @@ class scheduler:
                     task.close()
                     self.ready.append((task,ret))
                     self.pend.remove(task)
+                    # change cursor to first task if any is available
+                    if self.pend:
+                        self.cursor = 0
                 elif isinstance(ret,pending):
-                    self.cursor = (self.cursor + 1) % len(self.pend)
                     ret = task.send(None)
+                    self.cursor = (self.cursor + 1) % len(self.pend)
                 else:
                     raise ValueError(f"Invalid state {ret}")
             except Exception as e:
@@ -74,14 +81,16 @@ class scheduler:
 
 if __name__ == "__main__":
     sched = scheduler()
-    task1 = wait_for(2,"2second")
-    task2 = wait_for(4,"4second")
+    task1 = wait_for(2,"first 2 second")
+    task2 = wait_for(2,"second 2 second")
+    task3 = wait_for(2,"third 2 second")
     sched.add(task1)
     sched.add(task2)
+    sched.add(task3)
     try:
         sched.spin()
-    except:
-        pass
+    except Exception as e:
+        print(e)
 
     for task in sched.ready:
         print(task)
